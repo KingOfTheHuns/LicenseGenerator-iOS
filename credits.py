@@ -43,20 +43,20 @@ def main(argv):
                               usage='usage: %prog -s source_path -o output_plist -e [exclude_paths]',
                               version='%s %s' % (PROG, VERSION),
                               description=DESCRIPTION)
-    parser.add_option('-s', '--source', 
+    parser.add_option('-s', '--source',
                    type="string",
-                  dest='inputpath', 
-                  metavar='source_path', 
+                  dest='inputpath',
+                  metavar='source_path',
                   help='source directory to search for licenses')
-    parser.add_option('-o', '--output-plist', 
+    parser.add_option('-o', '--output-plist',
                    type="string",
-                  dest='outputfile', 
-                  metavar='output_plist', 
+                  dest='outputfile',
+                  metavar='output_plist',
                   help='path to the plist to be generated')
-    parser.add_option('-e', '--exclude', 
+    parser.add_option('-e', '--exclude',
                   action="extend", type="string",
-                  dest='excludes', 
-                  metavar='path1, ...', 
+                  dest='excludes',
+                  metavar='path1, ...',
                   help='comma seperated list of paths to be excluded')
     if len(sys.argv) == 1:
         parser.parse_args(['--help'])
@@ -83,7 +83,7 @@ def plistFromDir(dir, excludes):
     os.chdir(sys.path[0])
     for root, dirs, files in os.walk(dir):
         for file in files:
-            if file.startswith("LICENSE"):
+            if file.startswith("LICENSE") or file.startswith("LICENCE"):
                 plistPath = os.path.join(root, file)
                 if not excludePath(plistPath, excludes):
                     license = plistFromFile(plistPath)
@@ -93,7 +93,7 @@ def plistFromDir(dir, excludes):
 def plistFromFile(path):
     """
     Returns a plist representation of the file at 'path'. Uses the name of the
-    paremt folder for the title property.
+    parent folder for the title property.
     """
     base_group = {'Type': 'PSGroupSpecifier', 'FooterText': '', 'Title': ''}
     current_file = open(path, 'r')
@@ -103,11 +103,13 @@ def plistFromFile(path):
     srcBody = current_file.read()
     body = ""
     for match in re.finditer(r'(?s)((?:[^\n][\n]?)+)', srcBody):
-        body = body + re.sub("(\\n)", " ", match.group()) + "\n\n"
+        body = body + re.sub("(\\n)", " ", match.group()).rstrip() + "\n\n"
+    body = re.sub(' +', ' ', body)
+    body = body.strip()
     body = unicode(body, 'utf-8')
-    group['FooterText'] = rchop(body, " \n\n")
+    group['FooterText'] = body
     return group
-    
+
 def excludePath(path, excludes):
     if excludes is None:
         return False
@@ -115,11 +117,6 @@ def excludePath(path, excludes):
         if(re.search(pattern, path, re.S) != None):
             return True
     return False
-    
-def rchop(str, ending):
-    if str.endswith(ending):
-        return str[:-len(ending)]
-    return str
 
 if __name__ == "__main__":
     main(sys.argv[1:])
